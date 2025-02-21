@@ -1,0 +1,89 @@
+/* src/components/ControlPanel.css */
+.control-panel {
+  width: 16%;
+  max-width: 300px;
+  background-color: transparent;
+  border-left: 2px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cp-header {
+  height: 60px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: sticky;
+  top: 0;
+  background-color: transparent;
+  z-index: 10;
+}
+
+.cp-logo {
+  height: 40px;
+  width: auto;
+}
+
+.cp-content {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.control-panel-overlay {
+  position: fixed;
+  top: 0;
+  left: 60px;
+  width: 60%;
+  height: 100%;
+  background-color: #fff;
+  z-index: 200;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+  padding: 10px;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+  transform: translateX(-100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.control-panel-overlay.open {
+  transform: translateX(0);
+}
+
+@media (max-width: 768px) {
+  .control-panel {
+    width: 100%;
+  }
+}
+
+/* Trang chính button */
+.trang-chinh-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 10px;
+  width: 100%;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-align: center;
+}
+
+.trang-chinh-button:hover {
+  background-color: #c1dfa3;
+}
+
+.trang-chinh-button.active {
+  background-color: #c1dfa3;
+}
+
+.trang-chinh-button .category-name {
+  font-size: 16px;
+  color: #191919;
+  font-weight: bold;
+}

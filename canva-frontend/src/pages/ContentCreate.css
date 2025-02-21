@@ -1,0 +1,149 @@
+/* src/components/canvas/ContentCreate.css */
+
+.content-create-container {
+  margin: 10px;
+}
+
+/* Panel ở trên */
+.content-create-panel {
+  width: 100%;
+  height: 200px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+}
+
+.content-text {
+  flex: 1;
+}
+
+.content-text h2 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.category-description {
+  margin: 5px 0 0;
+  font-size: 14px;
+  white-space: pre-line;
+}
+
+.content-image {
+  margin-left: 20px;
+}
+
+.content-image img {
+  max-height: 160px;
+  object-fit: contain;
+}
+
+/* Grid các mẫu */
+.templates-grid-container {
+  width: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  transition: opacity 0.5s ease;
+  opacity: 1;
+}
+
+.templates-grid.fade {
+  opacity: 0;
+}
+
+.template-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.template-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.template-card h3 {
+  font-size: 16px;
+  margin: 8px;
+  color: #333;
+}
+
+.template-title-link {
+  text-decoration: none;
+  color: black;
+  transition: color 0.2s ease;
+}
+
+.template-title-link:hover {
+  color: #489620;
+}
+
+.template-author {
+  margin: 0 8px 8px;
+  color: #666;
+  font-size: 14px;
+}
+
+.template-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Phân trang */
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.pagination button {
+  margin: 0 4px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #f0f0f0;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pagination button.active {
+  background-color: #489620;
+  color: #fff;
+  border-color: #489620;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .templates-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .templates-grid {
+    grid-template-columns: 1fr;
+  }
+}

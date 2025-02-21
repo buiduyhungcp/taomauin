@@ -1,0 +1,13 @@
+/* src/App.css */
+.app-container {
+  position: relative;
+  background-color: #E6F1D8;
+  height: 100vh;
+}
+
+/* Container cho phần nội dung chính (ControlPanel và Canvas) */
+.main-content {
+  margin-left: 60px; /* Bỏ qua chiều rộng NavigationMenu cố định */
+  display: flex;
+  height: 100vh;
+}
