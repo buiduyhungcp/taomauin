@@ -15,7 +15,6 @@ const io = require('socket.io')(server, {
   cors: { origin: '*' }
 });
 
-// Khi kết nối, người dùng (client) sẽ "join" vào room theo user id
 io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id);
   socket.on('join', (userId) => {
@@ -24,7 +23,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Cấu hình kết nối MySQL
 const connection = mysql.createConnection({
   host: 'localhost',
   user: 'root',
@@ -40,7 +38,6 @@ connection.connect((err) => {
   console.log('Kết nối MySQL thành công.');
 });
 
-// Helper: generate a random session token
 const generateSessionToken = () => {
   return crypto.randomBytes(32).toString('hex');
 };
@@ -64,10 +61,9 @@ app.post('/api/login', (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ error: 'Password không đúng' });
     }
-    // Tạo session token mới
     const newToken = generateSessionToken();
     const updateSql = 'UPDATE user SET session_token = ? WHERE id = ?';
-    connection.query(updateSql, [newToken, user.id], (updateErr, updateResult) => {
+    connection.query(updateSql, [newToken, user.id], (updateErr) => {
       if (updateErr) {
         console.error(updateErr);
         return res.status(500).json({ error: 'Lỗi hệ thống' });
@@ -111,7 +107,7 @@ app.get('/api/categories', (req, res) => {
   });
 });
 
-// Endpoint để lấy templates theo danh mục (cat_id)
+// Endpoint lấy templates theo danh mục
 app.get('/api/templates', (req, res) => {
   const cat_id = req.query.cat_id;
   if (!cat_id) {
@@ -127,7 +123,51 @@ app.get('/api/templates', (req, res) => {
   });
 });
 
-// Sử dụng server thay vì app.listen
+// Endpoint lấy dynamic fields (template_fields) theo mẫu
+app.get('/api/template_fields', (req, res) => {
+  const template_id = req.query.template_id;
+  if (!template_id) {
+    return res.status(400).json({ error: 'template_id is required' });
+  }
+  const sql = 'SELECT * FROM template_fields WHERE template_id = ? ORDER BY id';
+  connection.query(sql, [template_id], (err, results) => {
+    if (err) {
+      console.error("Lỗi truy vấn template_fields:", err);
+      return res.status(500).json({ error: 'Lỗi hệ thống' });
+    }
+    res.json(results);
+  });
+});
+
+// Endpoint lấy fixed fields theo mẫu
+app.get('/api/fixed_fields', (req, res) => {
+  const template_id = req.query.template_id;
+  if (!template_id) {
+    return res.status(400).json({ error: 'template_id is required' });
+  }
+  const sql = 'SELECT * FROM fixed_fields WHERE template_id = ? ORDER BY id';
+  connection.query(sql, [template_id], (err, results) => {
+    if (err) {
+      console.error("Lỗi truy vấn fixed_fields:", err);
+      return res.status(500).json({ error: 'Lỗi hệ thống' });
+    }
+    res.json(results);
+  });
+});
+
+// --- Endpoint mới dành riêng cho fonts ---
+app.get('/api/fonts', (req, res) => {
+  const sql = 'SELECT * FROM fonts ORDER BY id';
+  connection.query(sql, (err, results) => {
+    if (err) {
+      console.error("Lỗi truy vấn fonts:", err);
+      return res.status(500).json({ error: 'Lỗi hệ thống' });
+    }
+    res.json(results);
+  });
+});
+
+// Khởi chạy server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server chạy trên cổng ${PORT}`);

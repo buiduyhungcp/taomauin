@@ -8,6 +8,7 @@ import Canvas from './components/canvas/Canvas';
 import LoginPanel from './components/panels/LoginRegister/LoginPanel';
 import RegisterPanel from './components/panels/LoginRegister/RegisterPanel';
 import NotificationDialog from './components/common/NotificationDialog';
+import 'bootstrap/dist/css/bootstrap.min.css'; // Import Bootstrap CSS
 import './App.css';
 
 const socket = io('http://192.168.1.122:5000');
@@ -15,9 +16,7 @@ const socket = io('http://192.168.1.122:5000');
 function App() {
   const [activePage, setActivePage] = useState('Home');
   const [user, setUser] = useState(null);
-  // Quản lý danh mục được chọn cho phần Tạo mẫu (mặc định là Trang chính)
   const [selectedTemplateCategory, setSelectedTemplateCategory] = useState({ id: 0, cat_name: 'Trang chính' });
-  // State cho mẫu được chọn khi click vào hyperlink trong ContentCreate
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showLoginPanel, setShowLoginPanel] = useState(false);
   const [loginErrorMsg, setLoginErrorMsg] = useState('');
@@ -25,6 +24,9 @@ function App() {
   const [showControlPanel, setShowControlPanel] = useState(false);
   const [notification, setNotification] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // State fonts: danh sách font được lấy động từ backend (database)
+  const [fonts, setFonts] = useState([]);
 
   // Load user từ localStorage hoặc cookie khi mount
   useEffect(() => {
@@ -40,6 +42,40 @@ function App() {
       socket.emit('join', usr.id);
     }
   }, []);
+
+  // Fetch danh sách font từ backend qua endpoint /api/fonts
+  useEffect(() => {
+    fetch('http://192.168.1.122:5000/api/fonts')
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setFonts(data);
+        }
+      })
+      .catch(err => console.error("Error fetching fonts:", err));
+  }, []);
+
+  // Khi fonts được fetch, tạo khai báo @font-face và chèn vào thẻ <style id="dynamic-fonts">
+  useEffect(() => {
+    if (fonts.length > 0) {
+      let styleContent = "";
+      fonts.forEach((font) => {
+        // Giả sử font.path_font chứa tên file, ví dụ: "TenFont.ttf"
+        // Và các file này nằm trong public/fonts
+        styleContent += `
+          @font-face {
+            font-family: '${font.name}';
+            src: url('fonts/${font.path_font}') format('truetype');
+          }
+        `;
+      });
+      console.log("Dynamic font-face declarations:", styleContent);
+      const dynamicFontsEl = document.getElementById("dynamic-fonts");
+      if (dynamicFontsEl) {
+        dynamicFontsEl.innerHTML = styleContent;
+      }
+    }
+  }, [fonts]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -67,13 +103,10 @@ function App() {
     setShowLoginPanel(true);
   };
 
-  // Khi người dùng click chọn trang từ NavigationMenu
   const handleNavigationClick = (page) => {
     if (page !== 'Home' && !user) {
       openLogin("Bạn phải đăng nhập để tiếp tục!");
     } else {
-      // Nếu chuyển sang Tạo mẫu (hoặc Create) và activePage chưa là Tạo mẫu,
-      // reset danh mục về mặc định
       if ((page === 'Tạo mẫu' || page === 'Create') && activePage !== page) {
         setSelectedTemplateCategory({ id: 0, cat_name: 'Trang chính' });
       }
@@ -81,16 +114,13 @@ function App() {
     }
   };
 
-  // Khi người dùng chọn danh mục ở ControlPanel
   const handleCategorySelect = (cat) => {
     setSelectedTemplateCategory(cat);
-    // Nếu danh mục được chọn không phải mặc định, chuyển activePage về "Tạo mẫu"
     if (cat.id !== 0) {
       setActivePage('Tạo mẫu');
     }
   };
 
-  // Khi người dùng click vào hyperlink của mẫu trong ContentCreate
   const handleTemplateSelect = (tpl) => {
     setSelectedTemplate(tpl);
     setActivePage('CreateApp');
@@ -98,7 +128,7 @@ function App() {
 
   const handleLoginButtonClick = () => openLogin('');
   const handleRegisterButtonClick = () => setShowRegisterPanel(true);
-  const toggleControlPanel = () => setShowControlPanel((prev) => !prev);
+  const toggleControlPanel = () => setShowControlPanel(prev => !prev);
 
   const handleLogin = async (data) => {
     try {
@@ -183,6 +213,7 @@ function App() {
           selectedCategory={selectedTemplateCategory}
           onTemplateSelect={handleTemplateSelect}
           selectedTemplate={selectedTemplate}
+          fonts={fonts}  // Truyền danh sách font xuống Canvas nếu cần
         />
       </div>
       {isMobile && (
