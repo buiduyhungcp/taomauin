@@ -1,0 +1,79 @@
+Folder PATH listing
+Volume serial number is 8AC8-5977
+C:.
+¦   App.css
+¦   App.js
+¦   index.css
+¦   index.js
+¦   o.txt
+¦   output.txt
+¦   
++---assets
+¦   +---icons
+¦   ¦       create.png
+¦   ¦       design.png
+¦   ¦       home.png
+¦   ¦       logo.png
+¦   ¦       menu.png
+¦   ¦       other.png
+¦   ¦       
+¦   +---images
+¦           header-create.png
+¦           
++---components
+¦   +---canvas
+¦   ¦       Canvas.css
+¦   ¦       Canvas.js
+¦   ¦       CanvasTopNav.css
+¦   ¦       CanvasTopNav.js
+¦   ¦       UserPanel.css
+¦   ¦       UserPanel.js
+¦   ¦       
+¦   +---common
+¦   ¦       NavigationMenu.css
+¦   ¦       NavigationMenu.js
+¦   ¦       NotificationDialog.css
+¦   ¦       NotificationDialog.js
+¦   ¦       
+¦   +---controlpanel
+¦   ¦   ¦   CategoryTree.css
+¦   ¦   ¦   CategoryTree.js
+¦   ¦   ¦   ControlPanel.css
+¦   ¦   ¦   ControlPanel.js
+¦   ¦   ¦   
+¦   ¦   +---pages
+¦   ¦           designPage.js
+¦   ¦           homePage.js
+¦   ¦           otherPage.js
+¦   ¦           
+¦   +---panels
+¦       +---LoginRegister
+¦               LoginPanel.css
+¦               LoginPanel.js
+¦               RegisterPanel.css
+¦               RegisterPanel.js
+¦               
++---images
+¦   +---demo
+¦   ¦       67ae0ee2e4d7c.png
+¦   ¦       67ae176a8c7b1.png
+¦   ¦       67ae1acda5cdd.png
+¦   ¦       
+¦   +---templates
+¦           67aa2939e16e4.png
+¦           67adf387b362b.png
+¦           67ae176a8c649.png
+¦           
++---pages
+    ¦   ContentCreate.css
+    ¦   ContentCreate.js
+    ¦   CreateApp.js
+    ¦   designPage.js
+    ¦   homePage.js
+    ¦   HomepageCreate.css
+    ¦   HomepageCreate.js
+    ¦   otherPage.js
+    ¦   
+    +---bootstrap
+        +---dist
+            +---css

@@ -19,13 +19,35 @@ const loadImageAsDataURL = (src) => {
       ctx.drawImage(img, 0, 0);
       resolve(canvas.toDataURL('image/png'));
     };
-    img.onerror = (err) => {
-      reject(err);
+    img.onerror = () => {
+      reject(new Error(`Failed to load image from ${src}`));
     };
   });
 };
 
-// Các hàm chuyển đổi (stub)
+// Hàm lấy ảnh demo từ ../images/demo
+const getDemoImage = (demoFileName) => {
+  try {
+    const fileName = demoFileName.startsWith('./') ? demoFileName.substring(2) : demoFileName;
+    const imageModule = require(`../images/demo/${fileName}`);
+    return imageModule.default || imageModule;
+  } catch (error) {
+    return null;
+  }
+};
+
+// Hàm lấy ảnh nền template từ ../images/templates
+const getTemplateImage = (bgFileName) => {
+  try {
+    const fileName = bgFileName.startsWith('./') ? bgFileName.substring(2) : bgFileName;
+    const imageModule = require(`../images/templates/${fileName}`);
+    return imageModule.default || imageModule;
+  } catch (error) {
+    return null;
+  }
+};
+
+// Các hàm chuyển đổi
 function convertToVni(text) {
   return text;
 }
@@ -38,7 +60,6 @@ function convertText(text, encoding) {
   return text;
 }
 function getFontEncoding(fontName) {
-  // Ở đây trả về "unicode" mặc định; có thể mở rộng logic nếu cần
   return 'unicode';
 }
 function adjustX(anchorX, textWidth, fieldAlign, textAlign) {
@@ -48,95 +69,104 @@ function calculateYPosition(userY) {
   return userY;
 }
 
-// Cấu hình watermark
+// Watermark config
 const watermarkTop = { text: "TOP WATERMARK", font: "36px sans-serif", color: "#FF0000", opacity: 0.3 };
 const watermarkCenter = { text: "CENTER WATERMARK", font: "48px sans-serif", color: "#0000FF", opacity: 0.3, rotation: -Math.PI / 4 };
 const watermarkBottom = { text: "BOTTOM WATERMARK", font: "36px sans-serif", color: "#008000", opacity: 0.3 };
-
-// Hàm lấy ảnh demo (dynamic) từ thư mục ../images/demo
-const getDemoImage = (demoFileName) => {
-  try {
-    const fileName = demoFileName.startsWith('./') ? demoFileName.substring(2) : demoFileName;
-    const imageModule = require(`../images/demo/${fileName}`);
-    return imageModule.default || imageModule;
-  } catch (error) {
-    return null;
-  }
-};
 
 const CreateApp = ({ selectedTemplate }) => {
   const [dynamicFields, setDynamicFields] = useState({});
   const [fixedFields, setFixedFields] = useState({});
   const [generating, setGenerating] = useState(false);
-  
-  // Dữ liệu cho bảng “Dữ liệu đầu vào”
+
+  // Bảng dữ liệu "Dữ liệu đầu vào"
   const [tableData, setTableData] = useState([]);
-  // Dữ liệu dynamic fields (template_fields) từ backend
+  // Dynamic fields
   const [fetchedFields, setFetchedFields] = useState([]);
-  // Danh sách font được lấy động từ backend (các file font nằm trong public/fonts)
+  // Fixed fields
+  const [fetchedFixedFields, setFetchedFixedFields] = useState([]);
+  // Danh sách font
   const [fonts, setFonts] = useState([]);
-  
+  // Danh sách khổ giấy
+  const [paperSizes, setPaperSizes] = useState([]);
+
   const fileInputRef = useRef(null);
 
-  // Fetch danh sách font từ backend (endpoint: /api/fonts)
+  // Fetch fonts
   useEffect(() => {
     fetch('http://192.168.1.122:5000/api/fonts')
       .then(res => res.json())
       .then(data => {
-        if (data) {
-          setFonts(data);
-        }
+        if (data) setFonts(data);
       })
       .catch(err => console.error("Error fetching fonts:", err));
   }, []);
 
-  
+  // Fetch paper_sizes (mới thêm)
+  useEffect(() => {
+    fetch('http://192.168.1.122:5000/api/paper_sizes')
+      .then(res => res.json())
+      .then(data => {
+        console.log(data);
+        if (data) setPaperSizes(data);
+      })
+      .catch(err => console.error("Error fetching paper_sizes:", err));
+  }, []);
 
-  // Khi selectedTemplate thay đổi, cập nhật fixed fields từ selectedTemplate.fixed_fields
+  // Fetch fixed_fields
   useEffect(() => {
     if (selectedTemplate) {
-      const initialFixed = {};
-      if (selectedTemplate.fixed_fields && Array.isArray(selectedTemplate.fixed_fields)) {
-        selectedTemplate.fixed_fields.forEach((ff) => {
-          initialFixed[ff.id] = ff.content || "";
-        });
-      }
-      setFixedFields(initialFixed);
+      const url = `http://192.168.1.122:5000/api/fixed_fields?template_id=${selectedTemplate.id}`;
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            setFetchedFixedFields(data);
+            const initialFixed = data.reduce((acc, field) => {
+              acc[field.id] = field.content || "";
+              return acc;
+            }, {});
+            setFixedFields(initialFixed);
+          } else {
+            setFetchedFixedFields([]);
+            setFixedFields({});
+          }
+        })
+        .catch(err => console.error("Error fetching fixed_fields:", err));
     }
   }, [selectedTemplate]);
 
-  // Fetch dynamic fields (template_fields) từ backend cho mẫu được chọn
+  // Fetch template_fields
   useEffect(() => {
     if (selectedTemplate) {
       const url = `http://192.168.1.122:5000/api/template_fields?template_id=${selectedTemplate.id}`;
       fetch(url)
-        .then((res) => res.json())
-        .then((data) => {
+        .then(res => res.json())
+        .then(data => {
           if (data && data.length > 0) {
             setFetchedFields(data);
             const headerRow = data.map(field => field.name);
-            // Thêm 1 dòng trống mặc định bên dưới header
             setTableData([headerRow, headerRow.map(() => "")]);
           } else {
             setFetchedFields([]);
             setTableData([]);
           }
         })
-        .catch((err) => {
-          console.error("Error fetching template_fields:", err);
-        });
+        .catch(err => console.error("Error fetching template_fields:", err));
     }
   }, [selectedTemplate]);
 
+  // Handler thay đổi dynamicFields
   const handleDynamicFieldChange = (fieldName, value) => {
     setDynamicFields(prev => ({ ...prev, [fieldName]: value }));
   };
 
+  // Handler thay đổi fixedFields
   const handleFixedFieldChange = (fieldId, value) => {
     setFixedFields(prev => ({ ...prev, [fieldId]: value }));
   };
 
-  // Sử dụng useMemo để tính previewImageSrc dựa trên selectedTemplate.demo
+  // Ảnh demo
   const previewImageSrc = useMemo(() => {
     return selectedTemplate && selectedTemplate.demo ? getDemoImage(selectedTemplate.demo) : null;
   }, [selectedTemplate]);
@@ -158,6 +188,7 @@ const CreateApp = ({ selectedTemplate }) => {
     );
   }
 
+  // Thêm dòng
   const addRow = () => {
     setTableData(prev => {
       if (prev.length === 0) return [];
@@ -167,6 +198,7 @@ const CreateApp = ({ selectedTemplate }) => {
     });
   };
 
+  // Tải file Excel mẫu
   const downloadSampleExcel = () => {
     if (!selectedTemplate || fetchedFields.length === 0) return;
     const header = fetchedFields.map(f => f.name);
@@ -176,6 +208,7 @@ const CreateApp = ({ selectedTemplate }) => {
     XLSX.writeFile(wb, "sample.xlsx");
   };
 
+  // Upload file Excel
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -201,6 +234,7 @@ const CreateApp = ({ selectedTemplate }) => {
     reader.readAsBinaryString(file);
   };
 
+  // Render spreadsheet
   const renderSpreadsheet = () => {
     return (
       <div id="spreadsheet-section" className="mt-3">
@@ -209,7 +243,8 @@ const CreateApp = ({ selectedTemplate }) => {
           <table className="table table-bordered table-sm">
             <thead className="table-light">
               <tr>
-                {tableData.length > 0 && tableData[0].map((col, idx) => <th key={idx}>{col}</th>)}
+                {tableData.length > 0 &&
+                  tableData[0].map((col, idx) => <th key={idx}>{col}</th>)}
                 <th>Xóa</th>
               </tr>
             </thead>
@@ -250,14 +285,25 @@ const CreateApp = ({ selectedTemplate }) => {
         </div>
         <div className="mb-3">
           <button className="btn btn-primary me-2" onClick={addRow}>Thêm dòng</button>
-          <button className="btn btn-secondary me-2" onClick={() => fileInputRef.current.click()}>Nhập từ file Excel</button>
-          <button className="btn btn-info me-2" onClick={downloadSampleExcel}>Tải file Excel mẫu</button>
-          <input type="file" accept=".xls,.xlsx" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileUpload} />
+          <button className="btn btn-secondary me-2" onClick={() => fileInputRef.current.click()}>
+            Nhập từ file Excel
+          </button>
+          <button className="btn btn-info me-2" onClick={downloadSampleExcel}>
+            Tải file Excel mẫu
+          </button>
+          <input
+            type="file"
+            accept=".xls,.xlsx"
+            style={{ display: 'none' }}
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+          />
         </div>
       </div>
     );
   };
 
+  // Render dynamic fields
   const renderDynamicFieldOptions = () => {
     if (!fetchedFields || fetchedFields.length === 0) return null;
     return (
@@ -276,6 +322,7 @@ const CreateApp = ({ selectedTemplate }) => {
                 defaultValue={field.value || ''}
               />
               <div className="row mt-2">
+                {/* Ẩn X, Y, align, v.v. nếu không cần hiển thị */}
                 <div className="col" style={{ display: 'none' }}>
                   <label htmlFor={`x-${fieldId}`} className="form-label">Tọa độ X:</label>
                   <input type="number" id={`x-${fieldId}`} className="form-control" defaultValue={field.x} />
@@ -318,18 +365,90 @@ const CreateApp = ({ selectedTemplate }) => {
     );
   };
 
+  // Render fixed fields (chỉ hiển thị những field có display = 1)
+  const renderFixedFieldOptions = () => {
+    if (!fetchedFixedFields || fetchedFixedFields.length === 0) return null;
+    const visibleFixedFields = fetchedFixedFields.filter(ff => parseInt(ff.display) === 1);
+    if (visibleFixedFields.length === 0) return null;
+    return (
+      <div className="mt-3">
+        <h4 className="mb-3">Các đối tượng khác</h4>
+        {visibleFixedFields.map((ff) => (
+          <div key={ff.id} className="mb-3">
+            <label htmlFor={`fixed-${ff.id}`} className="form-label">{ff.content}:</label>
+            <input
+              type="text"
+              id={`fixed-${ff.id}`}
+              className="form-control"
+              placeholder="Nhập nội dung fixed field"
+              value={fixedFields[ff.id] || ""}
+              onChange={(e) => handleFixedFieldChange(ff.id, e.target.value)}
+            />
+            <div className="row mt-2">
+              <div className="col" style={{ display: 'none' }}>
+                <label htmlFor={`x-fixed-${ff.id}`} className="form-label">Tọa độ X:</label>
+                <input type="number" id={`x-fixed-${ff.id}`} className="form-control" defaultValue={ff.x} />
+              </div>
+              <div className="col" style={{ display: 'none' }}>
+                <label htmlFor={`y-fixed-${ff.id}`} className="form-label">Tọa độ Y:</label>
+                <input type="number" id={`y-fixed-${ff.id}`} className="form-control" defaultValue={ff.y} />
+              </div>
+              <div className="col">
+                <label htmlFor={`color-fixed-${ff.id}`} className="form-label">Màu sắc:</label>
+                <input type="color" id={`color-fixed-${ff.id}`} className="form-control" defaultValue={ff.color || '#000000'} />
+              </div>
+              <div className="col">
+                <label htmlFor={`size-fixed-${ff.id}`} className="form-label">Cỡ chữ:</label>
+                <input type="number" id={`size-fixed-${ff.id}`} className="form-control" defaultValue={ff.size || 14} />
+              </div>
+              <div className="col">
+                <label htmlFor={`font-fixed-${ff.id}`} className="form-label">Font:</label>
+                <select id={`font-fixed-${ff.id}`} className="form-control" defaultValue={ff.font}>
+                  {fonts.map((f, idx) => (
+                    <option key={idx} value={f.name} data-path-font={f.path_font} style={{ fontFamily: f.name }}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Hàm generatePDF
   const generatePDF = async () => {
-    try {
+    try { 
       setGenerating(true);
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      // Tìm paper size tương ứng
+      const paper = paperSizes.find(p => p.id == selectedTemplate.paper_id);
+      let orientation, customFormat;
+      if (paper) {
+        orientation = (paper.width > paper.height) ? 'landscape' : 'portrait';
+        customFormat = [paper.width, paper.height];
+      } else {
+        orientation = 'portrait';
+        customFormat = 'a4';
+      }
+      
+      const pdf = new jsPDF({ orientation, unit: 'mm', format: customFormat });
+
+      // Load ảnh nền từ ../images/templates
+      const bgSrc = selectedTemplate.background ? getTemplateImage(selectedTemplate.background) : null;
+      if (!bgSrc) {
+        throw new Error(`Failed to load template image: ${selectedTemplate.background}`);
+      }
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-
-      const bgSrc = `/images/templates/${selectedTemplate.background}`;
       const bgDataURL = await loadImageAsDataURL(bgSrc);
       pdf.addImage(bgDataURL, 'PNG', 0, 0, pageWidth, pageHeight);
 
+      
+      // In dynamic fields
       if (fetchedFields && fetchedFields.length > 0) {
+        
         fetchedFields.forEach((field) => {
           const rawValue = dynamicFields[field.name] || "";
           const encoding = getFontEncoding(field.font || 'Helvetica');
@@ -348,31 +467,36 @@ const CreateApp = ({ selectedTemplate }) => {
             adjustX(x, pdf.getTextWidth(text), field.align || 'left', field.text_align || 'left'),
             calculateYPosition(y)
           );
+          console.log(text);
         });
       }
 
-      if (selectedTemplate.fixed_fields && Array.isArray(selectedTemplate.fixed_fields)) {
-        selectedTemplate.fixed_fields.forEach((ff) => {
-          const rawContent = fixedFields[ff.id] || ff.content || "";
-          const encoding = getFontEncoding(ff.font || 'Helvetica');
-          const text = convertText(rawContent, encoding);
-          const x = Number(ff.x) || 10;
-          const y = Number(ff.y) || 20;
-          pdf.setFontSize(ff.size || 14);
-          pdf.setTextColor(ff.color || '#000000');
-          try {
-            pdf.setFont(ff.font || 'Helvetica');
-          } catch (e) {
-            pdf.setFont('Helvetica');
-          }
-          pdf.text(
-            text,
-            adjustX(x, pdf.getTextWidth(text), ff.align || 'left', ff.text_align || 'left'),
-            calculateYPosition(y)
-          );
-        });
+      // In fixed fields (display = 1)
+      if (fetchedFixedFields && fetchedFixedFields.length > 0) {
+        fetchedFixedFields
+          .filter(ff => parseInt(ff.display) === 1)
+          .forEach((ff) => {
+            const rawContent = fixedFields[ff.id] || ff.content || "";
+            const encoding = getFontEncoding(ff.font || 'Helvetica');
+            const text = convertText(rawContent, encoding);
+            const x = Number(ff.x) || 10;
+            const y = Number(ff.y) || 20;
+            pdf.setFontSize(ff.size || 14);
+            pdf.setTextColor(ff.color || '#000000');
+            try {
+              pdf.setFont(ff.font || 'Helvetica');
+            } catch (e) {
+              pdf.setFont('Helvetica');
+            }
+            pdf.text(
+              text,
+              adjustX(x, pdf.getTextWidth(text), ff.align || 'left', ff.text_align || 'left'),
+              calculateYPosition(y)
+            );
+          });
       }
 
+      // In watermark
       pdf.setFontSize(36);
       pdf.setTextColor(watermarkTop.color);
       pdf.text(watermarkTop.text, pageWidth / 2, 40, { align: 'center' });
@@ -395,7 +519,11 @@ const CreateApp = ({ selectedTemplate }) => {
       pdf.setTextColor(watermarkBottom.color);
       pdf.text(watermarkBottom.text, pageWidth / 2, pageHeight - 20, { align: 'center' });
 
+      // Lưu file PDF
       pdf.save('certificate.pdf');
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Có lỗi xảy ra khi tạo PDF: " + error.message);
     } finally {
       setGenerating(false);
     }
@@ -466,31 +594,11 @@ const CreateApp = ({ selectedTemplate }) => {
                 />
               </div>
             ))}
-          {selectedTemplate.fixed_fields &&
-            selectedTemplate.fixed_fields.map((ff, index) => (
-              <div
-                key={`fixed-${index}`}
-                style={{
-                  ...overlayStyle,
-                  left: ff.x ? `${ff.x}px` : '10px',
-                  top: ff.y ? `${ff.y}px` : `${300 + index * 30}px`,
-                  color: ff.color || '#000',
-                  fontSize: ff.size ? `${ff.size}px` : '18px',
-                  fontFamily: ff.font || 'Helvetica'
-                }}
-              >
-                <input
-                  type="text"
-                  value={fixedFields[ff.id] || ""}
-                  onChange={(e) => handleFixedFieldChange(ff.id, e.target.value)}
-                  style={{ border: 'none', background: 'transparent', width: '100%' }}
-                />
-              </div>
-            ))}
         </div>
       </div>
       {renderSpreadsheet()}
       {renderDynamicFieldOptions()}
+      {renderFixedFieldOptions()}
       <div className="text-center mt-4">
         <button className="btn btn-success btn-lg" onClick={generatePDF} disabled={generating}>
           {generating ? 'Đang tạo PDF...' : 'Tạo Thư Khen'}

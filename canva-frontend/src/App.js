@@ -69,7 +69,7 @@ function App() {
           }
         `;
       });
-      console.log("Dynamic font-face declarations:", styleContent);
+      
       const dynamicFontsEl = document.getElementById("dynamic-fonts");
       if (dynamicFontsEl) {
         dynamicFontsEl.innerHTML = styleContent;

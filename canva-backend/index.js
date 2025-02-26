@@ -1,3 +1,4 @@
+// index.js
 const express = require('express');
 const mysql = require('mysql');
 const cors = require('cors');
@@ -23,6 +24,7 @@ io.on('connection', (socket) => {
   });
 });
 
+// Kết nối MySQL
 const connection = mysql.createConnection({
   host: 'localhost',
   user: 'root',
@@ -38,10 +40,12 @@ connection.connect((err) => {
   console.log('Kết nối MySQL thành công.');
 });
 
+// Hàm sinh session token
 const generateSessionToken = () => {
   return crypto.randomBytes(32).toString('hex');
 };
 
+// Endpoint đăng nhập
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -75,6 +79,7 @@ app.post('/api/login', (req, res) => {
   });
 });
 
+// Endpoint đăng ký
 app.post('/api/register', async (req, res) => {
   const { username, password, phone, email, address, fullName } = req.body;
   if (!username || !password) {
@@ -96,6 +101,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+// Endpoint lấy danh mục
 app.get('/api/categories', (req, res) => {
   const sql = 'SELECT * FROM category WHERE cat_show = 1 ORDER BY cat_home, id';
   connection.query(sql, (err, results) => {
@@ -123,7 +129,7 @@ app.get('/api/templates', (req, res) => {
   });
 });
 
-// Endpoint lấy dynamic fields (template_fields) theo mẫu
+// Endpoint lấy dynamic fields (template_fields)
 app.get('/api/template_fields', (req, res) => {
   const template_id = req.query.template_id;
   if (!template_id) {
@@ -139,7 +145,7 @@ app.get('/api/template_fields', (req, res) => {
   });
 });
 
-// Endpoint lấy fixed fields theo mẫu
+// Endpoint lấy fixed fields
 app.get('/api/fixed_fields', (req, res) => {
   const template_id = req.query.template_id;
   if (!template_id) {
@@ -155,7 +161,7 @@ app.get('/api/fixed_fields', (req, res) => {
   });
 });
 
-// --- Endpoint mới dành riêng cho fonts ---
+// Endpoint lấy fonts
 app.get('/api/fonts', (req, res) => {
   const sql = 'SELECT * FROM fonts ORDER BY id';
   connection.query(sql, (err, results) => {
@@ -166,6 +172,19 @@ app.get('/api/fonts', (req, res) => {
     res.json(results);
   });
 });
+
+// Endpoint lấy paper_sizes
+app.get('/api/paper_sizes', (req, res) => {
+  const sql = 'SELECT * FROM paper_sizes ORDER BY id';
+  connection.query(sql, (err, results) => {
+    if (err) {
+      console.error("Lỗi truy vấn paper_sizes:", err);
+      return res.status(500).json({ error: 'Lỗi hệ thống' });
+    }
+    res.json(results);
+  });
+});
+
 
 // Khởi chạy server
 const PORT = process.env.PORT || 5000;
